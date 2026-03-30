@@ -2,6 +2,7 @@ package com.green.greengram.application.user;
 
 import com.green.greengram.application.user.model.*;
 import com.green.greengram.configuration.util.MyFileUtil;
+import com.green.greengram.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,12 +17,13 @@ import java.io.IOException;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private final UserMapper userMapper;
+    //private final UserMapper userMapper;
+    private final UserRepository userRepository; //DI 받는다.
     private final PasswordEncoder passwordEncoder;
     private final MyFileUtil myFileUtil;
 
     public int signUp(UserSignUpReq req, MultipartFile mf) {
-        String hashedPw = passwordEncoder.encode( req.getUpw() );
+        String hashedPw = passwordEncoder.encode(req.getUpw());
         log.info("hashedPw: {}", hashedPw);
         req.setUpw(hashedPw);
 
@@ -30,8 +32,18 @@ public class UserService {
         req.setPic(savedPicFileName);
 
         //회원가입한 유저의 id값을 얻어오고 싶다.
-        int result = userMapper.signUp(req);
-        if( mf != null) {
+        User newUser = new User();
+        newUser.setUid(req.getUid());
+        newUser.setUpw(hashedPw);
+        newUser.setNm(req.getNm());
+        newUser.setPic(savedPicFileName);
+
+        userRepository.save(newUser);
+
+        int result = 1;
+
+//        int result = userMapper.signUp(req);
+        if (mf != null) {
             long id = req.getId(); //프로파일 이미지 저장하는 규칙이 있는데 pk값의 폴더를 만들고 거기에 이미지 파일을 저장한다.
             //String middlePath = String.format("user/%d", id); //String.format은 내가 원하는 문자열로 만들어주는친구.
             //printf는 출력이 목적, String.format은 내가원하는 문자열 출력목적.
@@ -41,34 +53,29 @@ public class UserService {
 
             String fullFilePath = String.format("%s/%s", middlePath, savedPicFileName);
 
-          try {
-            myFileUtil.transferTo(mf, fullFilePath);
-          } catch (IOException e) {
-            e.printStackTrace(); //오류 메세지 콘솔에 출력
-          }
+            try {
+                myFileUtil.transferTo(mf, fullFilePath);
+            } catch (IOException e) {
+                e.printStackTrace(); //오류 메세지 콘솔에 출력
+            }
         }
 
         return result;
     }
 
     public UserSignInRes signIn(UserSignInReq req) {
-        UserGetOneRes res = userMapper.findByUid( req.getUid() );
+        User user = userRepository.findByUid( req. getUid() );
+        log.info("user: {}", user);
 
-
-        log.info("res: {}", res);
-        if(res == null || !passwordEncoder.matches(req.getUpw(), res.getUpw())) { //비밀번호가 맞지 않으면?
+        if(user == null || !passwordEncoder.matches(req.getUpw(), user.getUpw())) { //비밀번호가 맞지 않으면?
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "아이디, 비밀번호를 확인해 주세요.");
         }
-        //로그인 성공!! 예전에는 AT, RT을 FE전달  >>> 보안 쿠키 이용
-//        JwtUser jwtUser = new JwtUser(res.getId());
-//        String accessToken = jwtTokenProvider.generateAccessToken(jwtUser);
-//        String refreshToken = jwtTokenProvider.generateRefreshToken(jwtUser);
 
         return UserSignInRes.builder()
-                            .signedUserId( res.getId() )
-                            .nm( res.getNm() )
-                            .pic( res.getPic() )
-                            .build();
+            .signedUserId( user.getId() )
+            .nm( user.getNm() )
+            .pic( user.getPic() )
+            .build();
     }
 
     public UserProfileGetRes getProfileUser(UserProfileGetReq req) {
@@ -79,12 +86,15 @@ public class UserService {
         2: profile주인이 로그인한 사용자를 팔로우 한 상태
         3: 서로 팔로우 한 상태
         */
-        return userMapper.findProfileUser(req);
+        //return userMapper.findProfileUser(req);
+        return null;
     }
 
     public String patchProfilePic(long signedUserId, MultipartFile pic) {
         //기존 프로파일 사진은 삭제, 기존 파일명을 구해야 함.
-        UserGetOneRes res = userMapper.findById( signedUserId );
+        //UserGetOneRes res = userMapper.findById( signedUserId );
+        //밑의 res는 영속성이 있는 객체라고 부른다. 영속성이 있다는 말은 엔티티 매니저가 관리하는 객체
+        User res = userRepository.findById(signedUserId).orElseThrow();
         String folderPath = String.format("user/%d", signedUserId);
 
         //파일 삭제 ㄱ
@@ -104,25 +114,10 @@ public class UserService {
             throw new RuntimeException(e);
         }
 
-        //DB 수정처리
-        UserUpdDto dto = UserUpdDto.builder()
-                                    .id(signedUserId)
-                                    .pic(saveFileName)
-                                    .build();
-        userMapper.updUser(dto);
+        res.setPic( saveFileName );
+
+        userRepository.save(res); //영속성이 있는 객체를 save하면 update문이 된다.
+
         return saveFileName;
-    }
-
-    public void deleteProfilePic(long signedUserId) {
-        //폴더 째로 삭제
-        String absolutePath = String.format("%s/user/%d", myFileUtil.fileUploadPath, signedUserId);
-        myFileUtil.deleteDirectory( absolutePath );
-
-        //user테이블의 해당 row의 pic 컬럼의 값을 null로 변경
-        UserUpdDto dto = UserUpdDto.builder()
-                                    .id(signedUserId)
-                                    .pic("")
-                                    .build();
-        userMapper.updUser(dto);
     }
 }
