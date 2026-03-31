@@ -14,6 +14,7 @@ public class FeedPostReq {
     private long feedId;
     // private long signedUserId; 가능하면 프론트에서 받는데이터만 적어주는것이 좋음
 
-    public void setSignedUserId(long signedUserId) {this.signedUserId = signedUserId;}
+    //Setter있으면 안넣어도 됨
+    //public void setSignedUserId(long signedUserId) {this.signedUserId = signedUserId;}
 
 }

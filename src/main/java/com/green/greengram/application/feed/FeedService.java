@@ -49,10 +49,13 @@ public class FeedService {
         //saveFeedPics메소드 호출하고 싶다!!!!!!!!!!!!!!!!!!!!!!!
         List<String> picSavedNames = imgUploadManager.saveFeedPics(feedId, pics);
 
-
         try{
-            feedMapper.savePics(feedId, picSavedNames);
-            //feedPicRepository.save();
+            //feedMapper.savePics(feedId, picSavedNames);
+
+            for (String pic : picSavedNames) { //pic에 picSavedNames을 하나씩 담는다.향상된 for문
+                FeedPic newFeedPic = new FeedPic(newFeed, pic);
+                feedPicRepository.save(newFeedPic);
+            }
 
         } catch (Exception e) {
             //에러가 발생하면 사진(파일)을 지운다.
