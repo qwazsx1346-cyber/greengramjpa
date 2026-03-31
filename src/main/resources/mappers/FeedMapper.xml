@@ -8,6 +8,56 @@
                 ,user_id = #{signedUserId}
     </insert>
 
+    <resultMap id="feedResultMap" type="com.green.greengram.application.feed.model.FeedGetRes">
+        <id property="id" column="id" />
+        <result property="contents" column="contents" />
+        <result property="location" column="location" />
+        <result property="createdAt" column="createdAt" />
+        <result property="writerUserId" column="writerUserId" />
+        <result property="writerUid" column="writerUid" />
+        <result property="writerNickName" column="writerNickName" />
+        <result property="writerPic" column="writerPic" />
+        <result property="isLike" column="isLike" />
+        <result property="likeCount" column="likeCount" />
+        <result property="commentCount" column="commentCount" />
+        <collection property="pics" column="pic"/>
+    </resultMap>
+    
+    <!-- n+1이슈 해결책, 위에 resultMap까지 초기화하여 활용-->
+    <select id="findAllResultMap" resultMap="feedResultMap">
+        SELECT  f.id, f.contents, f.location, f.created_at AS createdAt, f.user_id AS writerUserId,
+                u.uid AS writerUid, u.nm AS writerNickName, u.pic AS writerPic,
+                fl.feed_id IS NOT NULL AS isLike,
+                IFNULL (flc.likeCount, 0) AS likeCount,
+                IFNULL (fcc.commentCount, 0) AS commentCount, fp.pic
+        FROM feed f
+        JOIN user u
+          ON f.user_id = u.id
+        LEFT JOIN feed_like fl
+          ON f.id = fl.feed_id
+        AND fl.user_id = #{signedUserId}
+        LEFT JOIN (
+            SELECT feed_id, COUNT(feed_id) AS likeCount
+            FROM feed_like
+            GROUP BY feed_id
+        ) AS flc
+          ON flc.feed_id = f.id
+        LEFT JOIN (
+            SELECT feed_id, COUNT(feed_id) AS commentCount
+            FROM feed_comment
+            GROUP BY feed_id
+        ) AS fcc
+          ON fcc.feed_id = f.id
+        INNER JOIN feed_pic AS fp
+          ON fp.feed_id = f.id
+        <if test="profileUserId != null and profileUserId > 0 ">
+            WHERE f.user_id = #{profileUserId}
+        </if>
+        ORDER BY f.id DESC
+        LIMIT #{startIdx}, #{size}
+    </select>
+
+    <!-- n+1이슈 발생쿼리문, 밑에 findPicsById와 같이 select됨 -->
     <select id="findAll">
         SELECT  f.id, f.contents, f.location, f.created_at AS createdAt, f.user_id AS writerUserId,
                 u.uid AS writerUid, u.nm AS writerNickName, u.pic AS writerPic,
@@ -16,22 +66,22 @@
                 IFNULL (fcc.commentCount, 0) AS commentCount
         FROM feed f
         JOIN user u
-        ON f.user_id = u.id
+          ON f.user_id = u.id
         LEFT JOIN feed_like fl
-        ON f.id = fl.feed_id
+          ON f.id = fl.feed_id
         AND fl.user_id = #{signedUserId}
         LEFT JOIN (
             SELECT feed_id, COUNT(feed_id) AS likeCount
             FROM feed_like
             GROUP BY feed_id
         ) AS flc
-        ON flc.feed_id = f.id
+          ON flc.feed_id = f.id
         LEFT JOIN (
-        SELECT feed_id, COUNT(feed_id) AS commentCount
-        FROM feed_comment
-        GROUP BY feed_id
+            SELECT feed_id, COUNT(feed_id) AS commentCount
+            FROM feed_comment
+            GROUP BY feed_id
         ) AS fcc
-        ON fcc.feed_id = f.id
+            ON fcc.feed_id = f.id
         <if test="profileUserId != null and profileUserId > 0 ">
             WHERE f.user_id = #{profileUserId}
         </if>

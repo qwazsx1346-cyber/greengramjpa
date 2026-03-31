@@ -67,6 +67,7 @@ public class FeedService {
         return new FeedPostRes(feedId, picSavedNames);
     }
 
+    //여기서 n+1 이슈 발생
     public List<FeedGetRes> getFeedList(FeedGetReq req) {
         List<FeedGetRes> list = feedMapper.findAll(req);
         //작업!!피드 당 사진 정보를 가져오는 작업을 해야한다.
@@ -76,6 +77,11 @@ public class FeedService {
             res.setPics(pics);
         }
         return list;
+    }
+
+    //n+1이슈 해결방법
+    public List<FeedGetRes> getFeedList2(FeedGetReq req) {
+        return feedMapper.findAllResultMap(req);
     }
 
     public int deleteFeed(FeedDeleteReq req) {
