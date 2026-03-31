@@ -20,7 +20,9 @@
         <result property="isLike" column="isLike" />
         <result property="likeCount" column="likeCount" />
         <result property="commentCount" column="commentCount" />
-        <collection property="pics" column="pic"/>
+        <collection property="pics" ofType="java.lang.String">
+            <result column="pic"/>
+        </collection>
     </resultMap>
     
     <!-- n+1이슈 해결책, 위에 resultMap까지 초기화하여 활용-->

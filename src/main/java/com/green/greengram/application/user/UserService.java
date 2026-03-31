@@ -44,7 +44,7 @@ public class UserService {
 
 //        int result = userMapper.signUp(req);
         if (mf != null) {
-            long id = req.getId(); //프로파일 이미지 저장하는 규칙이 있는데 pk값의 폴더를 만들고 거기에 이미지 파일을 저장한다.
+            long id = newUser.getId(); //프로파일 이미지 저장하는 규칙이 있는데 pk값의 폴더를 만들고 거기에 이미지 파일을 저장한다.
             //String middlePath = String.format("user/%d", id); //String.format은 내가 원하는 문자열로 만들어주는친구.
             //printf는 출력이 목적, String.format은 내가원하는 문자열 출력목적.
             String middlePath = "user/" + id;
