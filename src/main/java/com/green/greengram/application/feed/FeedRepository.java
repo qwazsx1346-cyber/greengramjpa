@@ -4,9 +4,12 @@ import com.green.greengram.entity.Feed;
 import com.green.greengram.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
+
 //<어떤 엔터티랑 연결하냐, 그 엔터티의 PK타입이 무엇이냐?>
 public interface FeedRepository extends JpaRepository<Feed, Long> {
     //쿼리메소드로 id, user_id를 where 조건으로 해서 1개의 row를 가져오고 싶다.
     //select * from Feed where
-    Feed findByIdAndWriterUser(Long id, User signedUser);
+    //Optional은 null처리를 나이스하게 해주는 친구
+    Optional<Feed> findByIdAndWriterUser(Long id, User signedUser);
 }

@@ -95,7 +95,9 @@ public class FeedService {
 
         User signedUser = new User();
         signedUser.setId(req.getSignedUserId());
-        Feed feedForDel = feedRepository.findByIdAndWriterUser( req.getFeedId() , signedUser );
+        Feed feedForDel = feedRepository.findByIdAndWriterUser( req.getFeedId() , signedUser )
+            .orElseThrow(() -> new IllegalArgumentException("삭제 권한이 없습니다."));
+        //orElseThrow는 null이 넘어왔다면 에러를 터뜨리겠다는 뜻
         feedRepository.delete(feedForDel);
 
         //폴더 째 삭제
