@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 //<어떤 엔터티랑 연결하냐, 그 엔터티의 PK타입이 무엇이냐?>
 public interface UserRepository extends JpaRepository<User, Long> {
     //쿼리메소드, 메소드 이름으로 쿼리문을 만든다.
+    //By옆에 Uid붙이면 where옆에 uid값이 옴
     User findByUid(String uid);
 }
