@@ -10,6 +10,10 @@ import com.green.greengram.entity.FeedComment;
 import com.green.greengram.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -42,11 +46,21 @@ public class FeedCommentService {
     }
 
     public List<FeedCommentGetRes> getFeedCommentList(FeedCommentGetReq req) {
-        List<FeedCommentGetRes> commentList = feedCommentMapper.findAll(req);
+//        List<FeedCommentGetRes> commentList = feedCommentMapper.findAll(req);
+      Pageable pageable = PageRequest.of(req.getPage() - 1, req.getSize(), Sort.by("fc.id").descending());
+      List<FeedCommentGetRes> commentList = feedCommentRepository.getFeedCommentList(req.getFeedId(),pageable);
         return commentList;
     }
 
     public int deleteFeedComment(FeedCommentDeleteReq req) {
-        return feedCommentMapper.deleteFeedComments(req);
+      //return feedCommentMapper.deleteFeedComments(req);
+
+      User signedUser = new User();
+      signedUser.setId(req.getSignedUserId());
+      FeedComment feedCommentForDel = feedCommentRepository.findByIdAndUser(req.getFeedCommentId(), signedUser)
+          .orElseThrow(()-> new IllegalArgumentException("댓글 작성자가 아닙니다."));
+
+      feedCommentRepository.delete(feedCommentForDel);
+      return 1;
     }
 }
